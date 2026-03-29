@@ -1,4 +1,6 @@
 <Solution>
+  <Folder Name="/images/" />
   <Project Path="SmurfGame.BL/SmurfGame.BL.csproj" />
   <Project Path="SmurfGame.DAL/SmurfGame.DAL.csproj" />
+  <Project Path="SmurfGame.WinForms/SmurfGame.WinForms.csproj" Id="7eef0429-8c52-41f0-9c9a-d76712449acc" />
 </Solution>
