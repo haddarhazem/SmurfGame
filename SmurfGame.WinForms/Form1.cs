@@ -11,6 +11,9 @@ namespace SmurfGame.WinForms
         int speed = 10;
         private Smurf currentSmurf;
         private SmurfGameContext db;
+        private bool isMario = true;
+
+        private Bitmap imgHaut, imgBas, imgGauche, imgDroite;
 
         // 1. Declare the Timer
         private System.Windows.Forms.Timer autoSaveTimer;
@@ -19,12 +22,64 @@ namespace SmurfGame.WinForms
         {
             InitializeComponent();
             this.DoubleBuffered = true;
+
+            // Improve label visibility with a bold monospaced font and solid background
+            lblHealth.Font = new System.Drawing.Font("Consolas", 11F, System.Drawing.FontStyle.Bold);
+            lblHealth.ForeColor = System.Drawing.Color.DarkGreen;
+            lblHealth.BackColor = System.Drawing.Color.White;
+
+            lblCoordinates.Font = new System.Drawing.Font("Consolas", 11F, System.Drawing.FontStyle.Bold);
+            lblCoordinates.ForeColor = System.Drawing.Color.DarkBlue;
+            lblCoordinates.BackColor = System.Drawing.Color.White;
+
+            // 1. Ajoutez votre image en arrière-plan (remplacez 'maze' par le nom exact de votre image)
+            this.BackgroundImage = Properties.Resources.maze;
+            this.BackgroundImageLayout = ImageLayout.Stretch; // Stretch allows the image to scale
+
+            // 2. Ajustez la taille de la zone jouable pour qu'elle corresponde à l'image doublée
+            if (this.BackgroundImage != null)
+            {
+                this.ClientSize = new System.Drawing.Size(this.BackgroundImage.Width * 4, this.BackgroundImage.Height * 4);
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            // Ask user for character choice
+            DialogResult result = MessageBox.Show("Do you want to play as Mario? (Click 'No' to play as Kratos)", "Character Selection", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            isMario = (result == DialogResult.Yes);
+
+            // Load and cache images, swapping left/right for Kratos
+            if (isMario)
+            {
+                imgHaut = Properties.Resources.mario_haut;
+                imgBas = Properties.Resources.mario_bas;
+                imgGauche = Properties.Resources.mario_gauche;
+                imgDroite = Properties.Resources.mario_droite;
+            }
+            else
+            {
+                imgHaut = Properties.Resources.kratos_haut;
+                imgBas = Properties.Resources.kratos_bas;
+                imgGauche = Properties.Resources.kratos_droite; // Fix: swapped for Kratos
+                imgDroite = Properties.Resources.kratos_gauche; // Fix: swapped for Kratos
+            }
+
+            // Remove white background permanently from cached images
+            imgHaut.MakeTransparent(System.Drawing.Color.White);
+            imgBas.MakeTransparent(System.Drawing.Color.White);
+            imgGauche.MakeTransparent(System.Drawing.Color.White);
+            imgDroite.MakeTransparent(System.Drawing.Color.White);
+
+            // Force same size as Mario
+            pbPlayer.SizeMode = PictureBoxSizeMode.StretchImage;
+            pbPlayer.Size = new System.Drawing.Size(34, 34);
+            pbPlayer.BackColor = System.Drawing.Color.Transparent; // Make PictureBox background transparent
+            pbPlayer.Image = imgBas;
+
             // 1. Connect to the database
             db = new SmurfGameContext(new DbContextOptions<SmurfGameContext>());
+            db.Database.EnsureCreated();
 
             // --- NEW: DELETE OLD DATA ---
             // Grab all old Smurfs from previous games
@@ -41,7 +96,7 @@ namespace SmurfGame.WinForms
             // 2. Create the fresh Smurf for this session
             currentSmurf = new Smurf
             {
-                Name = "Papa Smurf",
+                Name = isMario ? "Mario" : "Kratos",
                 Health = 100,
                 MaxHealth = 100,
                 Level = 1,
@@ -83,16 +138,16 @@ namespace SmurfGame.WinForms
             switch (e.KeyCode)
             {
                 case Keys.Z:
-                    if (pbPlayer.Top > 0) { pbPlayer.Top -= speed; pbPlayer.Image = Properties.Resources.mario_haut; }
+                    if (pbPlayer.Top > 0) { pbPlayer.Top -= speed; pbPlayer.Image = imgHaut; }
                     break;
                 case Keys.S:
-                    if (pbPlayer.Bottom < this.ClientSize.Height) { pbPlayer.Top += speed; pbPlayer.Image = Properties.Resources.mario_bas; }
+                    if (pbPlayer.Bottom < this.ClientSize.Height) { pbPlayer.Top += speed; pbPlayer.Image = imgBas; }
                     break;
                 case Keys.Q:
-                    if (pbPlayer.Left > 0) { pbPlayer.Left -= speed; pbPlayer.Image = Properties.Resources.mario_gauche; }
+                    if (pbPlayer.Left > 0) { pbPlayer.Left -= speed; pbPlayer.Image = imgGauche; }
                     break;
                 case Keys.D:
-                    if (pbPlayer.Right < this.ClientSize.Width) { pbPlayer.Left += speed; pbPlayer.Image = Properties.Resources.mario_droite; }
+                    if (pbPlayer.Right < this.ClientSize.Width) { pbPlayer.Left += speed; pbPlayer.Image = imgDroite; }
                     break;
             }
 
@@ -142,6 +197,11 @@ namespace SmurfGame.WinForms
         }
 
         private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lblHealth_Click(object sender, EventArgs e)
         {
 
         }

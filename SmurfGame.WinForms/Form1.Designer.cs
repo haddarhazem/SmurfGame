@@ -64,6 +64,7 @@
             lblHealth.Size = new Size(50, 20);
             lblHealth.TabIndex = 2;
             lblHealth.Text = "label1";
+            lblHealth.Click += lblHealth_Click;
             // 
             // Form1
             // 

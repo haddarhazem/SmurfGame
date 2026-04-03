@@ -130,4 +130,19 @@
   <data name="mario_haut" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\images\mario_haut.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="maze" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\images\maze (background).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="kratos_bas" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\images\kratos-bas.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="kratos_droite" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\images\kratos_droite.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="kratos_gauche" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\images\kratos_gauche.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="kratos_haut" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\images\kratos_haut.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

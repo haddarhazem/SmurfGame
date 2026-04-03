@@ -23,7 +23,8 @@ namespace SmurfGame.DAL
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer(
-                @"server=(LocalDB)\MSSQLLocalDB;Initial Catalog=SmurfGameDB;Integrated Security=true"
+                @"server=(LocalDB)\MSSQLLocalDB;Initial Catalog=SmurfGameDB;Integrated Security=true;TrustServerCertificate=True",
+                builder => builder.EnableRetryOnFailure()
             );
         }
 
