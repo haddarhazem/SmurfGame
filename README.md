@@ -31,4 +31,43 @@ Because this game uses Entity Framework Core to save scores, you will need to se
 ### Setup Instructions
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/YourUsername/SmurfGame.git](https://github.com/YourUsername/SmurfGame.git)
+   git clone [https://github.com/haddarhazem/SmurfGame](https://github.com/haddarhazem/SmurfGame)
+
+Open the solution (.sln) in Visual Studio.
+
+Open the Package Manager Console (Tools -> NuGet Package Manager -> Package Manager Console).
+
+Ensure the Default Project is set to SmurfGame.DAL.
+
+Run the following command to build the database:
+
+PowerShell
+Update-Database -Project SmurfGame.DAL -StartupProject SmurfGame.WinForms
+Press F5 or click Start in Visual Studio to play!
+
+🕹️ Controls
+Arrow Keys: Move Papa Smurf up, down, left, and right.
+
+Objective: Enter your name, navigate the map, and touch all 6 floating bubbles to stop the timer.
+
+📸 Screenshots
+(Replace these placeholders with actual images of your game)
+
+Entering a custom player name before the game begins.
+
+Rescuing trapped Smurfs while avoiding Azrael.
+
+The interactive database-backed Leaderboard.
+
+💡 Lessons Learned
+This project was a deep dive into bypassing the standard limitations of Windows Forms. Key achievements include creating a custom visual render loop using Timers, handling transparent images over complex backgrounds, and seamlessly integrating an Entity Framework SQL database without interrupting the real-time gameplay.
+
+
+***
+
+### Quelques conseils pour GitHub :
+1. N'oublie pas de remplacer `YourUsername` dans le lien de clonage par ton vrai pseudo GitHub.
+2. Pour ajouter des images, le plus simple est de prendre des captures d'écran de ton jeu en marche, de les glisser-déposer directement dans la zone de texte quand tu édites le README sur le site web de GitHub. GitHub créera les liens automatiquement !
+3. **Important :** Assure-toi d'avoir un fichier `.gitignore` spécifique à Visual Studio dans ton projet (pour éviter d'envoyer les gros dossiers `/bin/` et `/obj/` sur GitHub).
+
+Félicitations encore pour avoir mené ce projet jusqu'au bout ! C'est une excellente pièce pour ton port
