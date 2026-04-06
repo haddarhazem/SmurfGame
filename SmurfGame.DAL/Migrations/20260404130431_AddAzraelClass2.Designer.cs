@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmurfGame.DAL;
 
@@ -10,9 +11,11 @@ using SmurfGame.DAL;
 namespace SmurfGame.DAL.Migrations
 {
     [DbContext(typeof(SmurfGameContext))]
-    partial class SmurfGameContextModelSnapshot : ModelSnapshot
+    [Migration("20260404130431_AddAzraelClass2")]
+    partial class AddAzraelClass2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -112,9 +115,6 @@ namespace SmurfGame.DAL.Migrations
                 {
                     b.HasBaseType("SmurfGame.BL.Entities.Creature");
 
-                    b.Property<int?>("BestTime")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsInForest")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -140,16 +140,6 @@ namespace SmurfGame.DAL.Migrations
                     b.HasBaseType("SmurfGame.BL.Entities.Item");
 
                     b.ToTable("BluePotions", (string)null);
-                });
-
-            modelBuilder.Entity("SmurfGame.BL.Entities.Coin", b =>
-                {
-                    b.HasBaseType("SmurfGame.BL.Entities.Item");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("int");
-
-                    b.ToTable("Coins");
                 });
 
             modelBuilder.Entity("SmurfGame.BL.Entities.RedPotion", b =>
@@ -226,15 +216,6 @@ namespace SmurfGame.DAL.Migrations
                     b.HasOne("SmurfGame.BL.Entities.Item", null)
                         .WithOne()
                         .HasForeignKey("SmurfGame.BL.Entities.BluePotion", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SmurfGame.BL.Entities.Coin", b =>
-                {
-                    b.HasOne("SmurfGame.BL.Entities.Item", null)
-                        .WithOne()
-                        .HasForeignKey("SmurfGame.BL.Entities.Coin", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

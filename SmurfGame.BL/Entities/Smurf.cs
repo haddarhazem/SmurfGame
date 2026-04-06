@@ -7,5 +7,6 @@ namespace SmurfGame.BL.Entities
         [Range(1, 100)]
         public int Level { get; set; } = 1;
         public bool IsInForest { get; set; } = false;
+        public int? BestTime { get; set; }
     }
 }

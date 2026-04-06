@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmurfGame.DAL;
 
@@ -10,9 +11,11 @@ using SmurfGame.DAL;
 namespace SmurfGame.DAL.Migrations
 {
     [DbContext(typeof(SmurfGameContext))]
-    partial class SmurfGameContextModelSnapshot : ModelSnapshot
+    [Migration("20260404014547_AddSpeedBuffClass")]
+    partial class AddSpeedBuffClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -88,16 +91,6 @@ namespace SmurfGame.DAL.Migrations
                     b.UseTptMappingStrategy();
                 });
 
-            modelBuilder.Entity("SmurfGame.BL.Entities.Azrael", b =>
-                {
-                    b.HasBaseType("SmurfGame.BL.Entities.Creature");
-
-                    b.Property<int>("Damage")
-                        .HasColumnType("int");
-
-                    b.ToTable("Azraels");
-                });
-
             modelBuilder.Entity("SmurfGame.BL.Entities.Bug", b =>
                 {
                     b.HasBaseType("SmurfGame.BL.Entities.Creature");
@@ -111,9 +104,6 @@ namespace SmurfGame.DAL.Migrations
             modelBuilder.Entity("SmurfGame.BL.Entities.Smurf", b =>
                 {
                     b.HasBaseType("SmurfGame.BL.Entities.Creature");
-
-                    b.Property<int?>("BestTime")
-                        .HasColumnType("int");
 
                     b.Property<bool>("IsInForest")
                         .ValueGeneratedOnAdd()
@@ -140,16 +130,6 @@ namespace SmurfGame.DAL.Migrations
                     b.HasBaseType("SmurfGame.BL.Entities.Item");
 
                     b.ToTable("BluePotions", (string)null);
-                });
-
-            modelBuilder.Entity("SmurfGame.BL.Entities.Coin", b =>
-                {
-                    b.HasBaseType("SmurfGame.BL.Entities.Item");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("int");
-
-                    b.ToTable("Coins");
                 });
 
             modelBuilder.Entity("SmurfGame.BL.Entities.RedPotion", b =>
@@ -226,15 +206,6 @@ namespace SmurfGame.DAL.Migrations
                     b.HasOne("SmurfGame.BL.Entities.Item", null)
                         .WithOne()
                         .HasForeignKey("SmurfGame.BL.Entities.BluePotion", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SmurfGame.BL.Entities.Coin", b =>
-                {
-                    b.HasOne("SmurfGame.BL.Entities.Item", null)
-                        .WithOne()
-                        .HasForeignKey("SmurfGame.BL.Entities.Coin", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

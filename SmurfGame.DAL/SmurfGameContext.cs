@@ -18,7 +18,9 @@ namespace SmurfGame.DAL
         public DbSet<Berry> Berries { get; set; }
         public DbSet<RedPotion> RedPotions { get; set; }
         public DbSet<BluePotion> BluePotions { get; set; }
-
+        public DbSet<SpeedBuff> SpeedBuffs { get; set; }
+        public DbSet<Azrael> Azraels { get; set; }
+        public DbSet<Coin> Coins { get; set; }
         // ── Connexion ───────────────────────────
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

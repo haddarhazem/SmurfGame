@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmurfGame.DAL;
 
@@ -10,9 +11,11 @@ using SmurfGame.DAL;
 namespace SmurfGame.DAL.Migrations
 {
     [DbContext(typeof(SmurfGameContext))]
-    partial class SmurfGameContextModelSnapshot : ModelSnapshot
+    [Migration("20260404232240_AddCoinClass")]
+    partial class AddCoinClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,9 +114,6 @@ namespace SmurfGame.DAL.Migrations
             modelBuilder.Entity("SmurfGame.BL.Entities.Smurf", b =>
                 {
                     b.HasBaseType("SmurfGame.BL.Entities.Creature");
-
-                    b.Property<int?>("BestTime")
-                        .HasColumnType("int");
 
                     b.Property<bool>("IsInForest")
                         .ValueGeneratedOnAdd()
