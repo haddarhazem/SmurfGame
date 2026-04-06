@@ -65,9 +65,3 @@ This project was a deep dive into bypassing the standard limitations of Windows 
 
 ***
 
-### Quelques conseils pour GitHub :
-1. N'oublie pas de remplacer `YourUsername` dans le lien de clonage par ton vrai pseudo GitHub.
-2. Pour ajouter des images, le plus simple est de prendre des captures d'écran de ton jeu en marche, de les glisser-déposer directement dans la zone de texte quand tu édites le README sur le site web de GitHub. GitHub créera les liens automatiquement !
-3. **Important :** Assure-toi d'avoir un fichier `.gitignore` spécifique à Visual Studio dans ton projet (pour éviter d'envoyer les gros dossiers `/bin/` et `/obj/` sur GitHub).
-
-Félicitations encore pour avoir mené ce projet jusqu'au bout ! C'est une excellente pièce pour ton port
