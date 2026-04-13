@@ -10,7 +10,6 @@ namespace SmurfGame.WinForms
 {
     public partial class Form1 : Form
     {
-        int speed = 5;
         private Smurf currentSmurf;
         private SmurfGameContext db;
         private Random rand = new Random();
@@ -26,30 +25,15 @@ namespace SmurfGame.WinForms
         private int secondsElapsed = 0;
         private Label lblScoreTimer;
 
-        //Array of all the idle frames for the player animation
-        private Image[] idleFrames;
-        private Image[] rightFrames;
-        private Image[] leftFrames;
-        private Image[] upFrames;
-        private Image[] downFrames;
-        
+        // --- COIN & AZRAEL ANIMATION TIMER ---
+        private System.Windows.Forms.Timer entityAnimationTimer;
+        private Image[] azraelFrames;
+        private int currentAzraelFrame = 0;
+        private Image[] coinFrames;
+        private int currentCoinFrame = 0;
 
-        // Tracks the which frame from (0 to 8)  we currently showing for the player animation
-        private int currentIdleFrame = 0;
-        private int currentRightFrame = 0;
-        private int currentLeftFrame = 0;
-        private int currentUpFrame = 0;
-        private int currentDownFrame = 0;
-        
-
-        // Times that counts to 3 seconds when the player is idle, then resets and starts counting again
-        private System.Windows.Forms.Timer idleWaitTimer;
-
-        // The timer that plays the animation really fast
-        private System.Windows.Forms.Timer animationTimer;
-
-        private bool isYawning = false;
-
+        // --- SMURF CONTROL ---
+        private SmurfControl smurfControl;
 
         private PictureBox pbBluePotion;
         private BluePotion currentBluePotion;
@@ -66,8 +50,6 @@ namespace SmurfGame.WinForms
         // --- AZRAEL VARIABLES ---
         private PictureBox pbAzrael;
         private Azrael currentAzrael;
-        private Image[] azraelFrames;
-        private int currentAzraelFrame = 0;
 
         // --- CHAT BOX VARIABLES ---
         private PictureBox pbChatBox;
@@ -78,6 +60,8 @@ namespace SmurfGame.WinForms
         // --Health Bar Variables--
         private PictureBox pbHealthBar;
         private PictureBox pbPlayerIcon;
+        private Label lblHPDisplay;  // NEW: Display current HP/Max HP
+        private Label lblDamage;  // NEW: Display damage taken
 
         // --- SCORE & COIN VARIABLES ---
         private int score = 0;
@@ -86,14 +70,8 @@ namespace SmurfGame.WinForms
         private PictureBox pbCoin;
         private Coin currentCoin;
 
-        // --- COIN ANIMATION VARIABLES ---
-        private Image[] coinFrames;
-        private int currentCoinFrame = 0;
-
         // --- GAME STATE VARIABLES ---
         private bool isGameOver = false;
-
-        //-----------------------------
 
         public Form1()
         {
@@ -185,277 +163,340 @@ namespace SmurfGame.WinForms
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
-            string chosenName = "Papa Smurf"; // Fallback name
-
-            using (NameEntryForm nameForm = new NameEntryForm())
+            try
             {
-                // Pause the game and show the popup. Wait for them to click OK!
-                if (nameForm.ShowDialog() == DialogResult.OK)
+                // IMMEDIATELY hide all designer picture boxes except the ones we need
+                // This prevents visual clutter and duplicate rendering
+                foreach (Control control in this.Controls)
                 {
-                    chosenName = nameForm.PlayerName; // Grab what they typed
+                    if (control is PictureBox pb)
+                    {
+                        // Keep only the picture boxes with the "obstacle" tag visible
+                        if (pb.Tag == null || pb.Tag.ToString() != "obstacle")
+                        {
+                            pb.Visible = false;
+                        }
+                    }
                 }
-            }
 
-            /**/
+                string chosenName = "Papa Smurf"; // Fallback name
 
-            //  Connect to the database
-            db = new SmurfGameContext(new DbContextOptions<SmurfGameContext>());
-
-            // --- MAP CLEANUP (PROTECTS SCORES) ---
-            // This grabs all leftover items from the last game and deletes them.
-            // Notice we do NOT touch db.Smurfs, so your leaderboard is perfectly safe!
-            db.Coins.RemoveRange(db.Coins.ToList());
-            db.BluePotions.RemoveRange(db.BluePotions.ToList());
-            db.SpeedBuffs.RemoveRange(db.SpeedBuffs.ToList());
-            db.Azraels.RemoveRange(db.Azraels.ToList());
-
-            // Push the cleanup to SQL Server before we spawn the new items
-            db.SaveChanges();
-            // -------------------------------------
-
-            // 2. Create the fresh Smurf for this session
-            currentSmurf = new Smurf
-            {
-                Name = chosenName,
-                Health = 100,
-                MaxHealth = 100,
-                Level = 1,
-                IsInForest = true,
-                X = pbPlayer.Left,
-                Y = pbPlayer.Top
-            };
-
-            // 3. Save the new Smurf so it gets an ID
-            db.Smurfs.Add(currentSmurf);
-            db.SaveChanges();
-
-
-
-            this.Text = $"Smurf ID: {currentSmurf.Id} - Ready to play!";
-
-            lblCoordinates.Text = $"X: {currentSmurf.X} | Y: {currentSmurf.Y}";
-
-            // 4. Start the Auto-Save Timer
-            autoSaveTimer = new System.Windows.Forms.Timer();
-            autoSaveTimer.Interval = 1000;
-            autoSaveTimer.Tick += AutoSaveTimer_Tick;
-            autoSaveTimer.Start();
-
-            // 1. Create the visual countdown label
-            lblBuffTime = new Label();
-            lblBuffTime.AutoSize = true;
-            lblBuffTime.Font = new Font("Segoe UI", 10, FontStyle.Regular);
-            lblBuffTime.ForeColor = Color.Orange;
-            lblBuffTime.BackColor = Color.Transparent;
-            lblBuffTime.Left = 600;
-            lblBuffTime.Top = 40; // Place it right under your Health/Coordinate labels
-            lblBuffTime.Visible = false; // Keep it hidden until he eats a buff
-            this.Controls.Add(lblBuffTime);
-
-            // 1. Create the Chat Box Background
-            pbChatBox = new PictureBox();
-            pbChatBox.Image = Properties.Resources.chat_box;
-            pbChatBox.Width = 400; // Adjust based on your image size
-            pbChatBox.Height = 150;
-            pbChatBox.SizeMode = PictureBoxSizeMode.StretchImage;
-
-            // Center it near the bottom of the screen
-            pbChatBox.Left = (this.ClientSize.Width - pbChatBox.Width) / 2;
-            pbChatBox.Top = this.ClientSize.Height - pbChatBox.Height - 50;
-            pbChatBox.Visible = false; // Hide it to start
-            this.Controls.Add(pbChatBox);
-
-            // 2. Create the Text inside the Chat Box
-            lblChatText = new Label();
-            lblChatText.Text = "Whoa! I feel so fast!\nI can definitely outrun Azrael now!\n\n(Press SPACE to continue)";
-            lblChatText.Font = new Font("Segoe UI", 12, FontStyle.Bold);
-            lblChatText.ForeColor = Color.White;
-            lblChatText.AutoSize = true;
-            lblChatText.Left = 20;
-            lblChatText.Top = 20;
-
-            // WINFORMS MAGIC TRICK: Set the Parent to the PictureBox so the background is truly transparent!
-            lblChatText.Parent = pbChatBox;
-            lblChatText.BackColor = Color.Transparent;
-            lblChatText.BringToFront();
-
-            // healthbar picture box
-            pbHealthBar = new PictureBox();
-            pbHealthBar.Width = 100;
-            pbHealthBar.Height = 20;
-            pbHealthBar.SizeMode = PictureBoxSizeMode.StretchImage;
-            pbHealthBar.BackColor = Color.Transparent;
-            pbHealthBar.Left = this.ClientSize.Width - pbHealthBar.Width - 80;
-            pbHealthBar.Top = 20; // Push it down slightly from the very top ceiling
-            this.Controls.Add(pbHealthBar);
-            pbHealthBar.BringToFront();
-
-            // --- ADD THE PLAYER PORTRAIT ---
-            pbPlayerIcon = new PictureBox();
-            pbPlayerIcon.Width = 60;  // Keeps it nicely inside that 80-pixel gap
-            pbPlayerIcon.Height = 60;
-            pbPlayerIcon.SizeMode = PictureBoxSizeMode.Zoom;
-            pbPlayerIcon.BackColor = Color.Transparent;
-
-            pbPlayerIcon.Image = Properties.Resources.playericon;
-
-            // Position it exactly 10 pixels to the right of where the health bar ends
-            pbPlayerIcon.Left = pbHealthBar.Right + 10;
-
-            // Set the Top so the portrait is vertically centered with the health bar
-            // Since the portrait is 60px tall and the bar is 20px tall, we shift it up slightly.
-            pbPlayerIcon.Top = pbHealthBar.Top - 20;
-
-            this.Controls.Add(pbPlayerIcon);
-            pbPlayerIcon.BringToFront();
-
-            // 1. Create the Time Trial UI
-            lblScoreTimer = new Label();
-            lblScoreTimer.AutoSize = true;
-            lblScoreTimer.Font = new Font("Segoe UI", 14, FontStyle.Bold);
-            lblScoreTimer.ForeColor = Color.Gold;
-            lblScoreTimer.BackColor = Color.Transparent;
-            lblScoreTimer.Text = "Time: 0s";
-
-            lblScoreTimer.Left = pbHealthBar.Left;
-            lblScoreTimer.Top = pbHealthBar.Bottom + 10;
-
-            this.Controls.Add(lblScoreTimer);
-            lblScoreTimer.BringToFront();
-
-            // 2. Setup the Stopwatch Timer
-            scoreTimer = new System.Windows.Forms.Timer();
-            scoreTimer.Interval = 1000; // Ticks every 1 second
-            scoreTimer.Tick += ScoreTimer_Tick;
-            scoreTimer.Start();
-
-            // -----------------------------
-
-            // 2. Setup the Timer to tick EVERY 1 SECOND
-            buffTimer = new System.Windows.Forms.Timer();
-            buffTimer.Interval = 1000; // Changed from 10000 to 1000!
-            buffTimer.Tick += BuffTimer_Tick;
-
-            UpdateHealthBar();
-
-            idleFrames = new Image[]
-            {
-                Properties.Resources.standing0, Properties.Resources.standing1,
-                Properties.Resources.standing2, Properties.Resources.standing3,
-                Properties.Resources.standing4, Properties.Resources.standing5,
-                Properties.Resources.standing6, Properties.Resources.standing7,
-                Properties.Resources.standing8
-            };
-
-            rightFrames = new Image[] {
-                Properties.Resources.right0,Properties.Resources.right1,
-                Properties.Resources.right2,Properties.Resources.right3,
-                Properties.Resources.right4,Properties.Resources.right5,
-                Properties.Resources.right6,Properties.Resources.right7
-            };
-
-            leftFrames = new Image[] {
-                Properties.Resources.left0,Properties.Resources.left1,
-                Properties.Resources.left2,Properties.Resources.left3,
-                Properties.Resources.left4,Properties.Resources.left5,
-                Properties.Resources.left6
-            };
-
-            upFrames = new Image[] {
-                Properties.Resources.up0,Properties.Resources.up1,
-                Properties.Resources.up2,Properties.Resources.up3
-            };
-
-            downFrames = new Image[] {
-                    Properties.Resources.down0,Properties.Resources.down1,
-                    Properties.Resources.down2,Properties.Resources.down3
-            };
-
-            azraelFrames = new Image[] { 
-                Properties.Resources.azrael0, Properties.Resources.azrael1,
-                Properties.Resources.azrael2, Properties.Resources.azrael3,
-                Properties.Resources.azrael4
-            };
-
-            // Load the animated coin frames!
-            coinFrames = new Image[]
-            {
-                Properties.Resources.coin0,
-                Properties.Resources.coin1,
-                Properties.Resources.coin2,
-                Properties.Resources.coin3,
-                Properties.Resources.coin4
-            };
-
-            // Initialize the idle wait timer
-            idleWaitTimer = new System.Windows.Forms.Timer();
-            idleWaitTimer.Interval = 10000; // 10000 milliseconds = 3 seconds
-            idleWaitTimer.Tick += IdleWaitTimer_Tick;
-            idleWaitTimer.Start(); // Start counting immediately!
-
-            // 3. Set up the Animation timer (Don't start it yet!)
-            animationTimer = new System.Windows.Forms.Timer();
-            animationTimer.Interval = 150; // 150ms makes it look like a smooth cartoon
-            animationTimer.Tick += AnimationTimer_Tick;
-            animationTimer.Start();
-
-            // Scan the form for our red hitboxes
-            foreach (Control x in this.Controls)
-            {
-                if (x is PictureBox && (string)x.Tag == "obstacle")
+                using (NameEntryForm nameForm = new NameEntryForm())
                 {
-                    obstacles.Add((PictureBox)x);
-
-                    // --- ADD THIS LINE ---
-                    x.Visible = false; // Hides the red box, but its collision math still works perfectly!
+                    // Pause the game and show the popup. Wait for them to click OK!
+                    if (nameForm.ShowDialog() == DialogResult.OK)
+                    {
+                        chosenName = nameForm.PlayerName; // Grab what they typed
+                    }
                 }
-            }
 
-            SpawnBluePotion();
-            SpawnSpeedBuff();
-            SpawnAzrael();
-            SpawnAllCoins();
+                System.Diagnostics.Debug.WriteLine("? Name entry complete: " + chosenName);
+
+                /**/
+
+                //  Connect to the database
+                try
+                {
+                    var optionsBuilder = new DbContextOptionsBuilder<SmurfGameContext>();
+                    optionsBuilder.UseSqlServer(
+                        @"server=(LocalDB)\MSSQLLocalDB;Initial Catalog=SmurfGameDB;Integrated Security=true"
+                    );
+
+                    db = new SmurfGameContext(optionsBuilder.Options);
+
+                    System.Diagnostics.Debug.WriteLine("? Database context created");
+
+                    // IMPORTANT: Only create the database if it doesn't exist - DO NOT delete it!
+                    // This preserves all player scores from previous games
+                    db.Database.EnsureCreated();
+                    System.Diagnostics.Debug.WriteLine("? Database created (if needed)");
+
+                    // --- MAP CLEANUP (PROTECTS SCORES) ---
+                    // Only delete game items, NOT player data!
+                    // This grabs all leftover items from the last game and deletes them.
+                    // Notice we do NOT touch db.Smurfs, so your leaderboard is perfectly safe!
+                    db.Coins.RemoveRange(db.Coins.ToList());
+                    db.BluePotions.RemoveRange(db.BluePotions.ToList());
+                    db.SpeedBuffs.RemoveRange(db.SpeedBuffs.ToList());
+                    db.Azraels.RemoveRange(db.Azraels.ToList());
+
+                    // Push the cleanup to SQL Server before we spawn the new items
+                    db.SaveChanges();
+                    System.Diagnostics.Debug.WriteLine("? Database cleanup complete");
+                    // -------------------------------------
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("? Database Error: " + ex.Message);
+                    MessageBox.Show(
+                        $"Database Connection Error:\n\n{ex.Message}\n\n" +
+                        $"Inner Exception: {ex.InnerException?.Message}\n\n" +
+                        $"Stack Trace: {ex.StackTrace}",
+                        "Database Error"
+                    );
+                    this.Close();
+                    return;
+                }
+
+                // 2. Create the fresh Smurf for this session
+                currentSmurf = new Smurf
+                {
+                    Name = chosenName,
+                    Health = 100,
+                    MaxHealth = 100,
+                    Level = 1,
+                    IsInForest = true,
+                    X = 62,
+                    Y = 154
+                };
+
+                // 3. Save the new Smurf so it gets an ID
+                db.Smurfs.Add(currentSmurf);
+                db.SaveChanges();
+
+                System.Diagnostics.Debug.WriteLine("? Smurf created with ID: " + currentSmurf.Id);
+
+                this.Text = $"Smurf ID: {currentSmurf.Id} - Ready to play!";
+
+                // --- CREATE SMURF CONTROL ---
+                smurfControl = new SmurfControl();
+                smurfControl.CurrentSmurf = currentSmurf;
+                smurfControl.Left = currentSmurf.X;
+                smurfControl.Top = currentSmurf.Y;
+                smurfControl.Width = 30;  // Reduced from 40 to fit through paths
+                smurfControl.Height = 30; // Reduced from 40 to fit through paths
+                smurfControl.BackColor = Color.Transparent;
+                this.Controls.Add(smurfControl);
+                smurfControl.BringToFront();
+
+                System.Diagnostics.Debug.WriteLine("? SmurfControl added to form");
+
+                lblCoordinates.Text = $"X: {currentSmurf.X} | Y: {currentSmurf.Y}";
+
+                // 4. Start the Auto-Save Timer
+                autoSaveTimer = new System.Windows.Forms.Timer();
+                autoSaveTimer.Interval = 1000;
+                autoSaveTimer.Tick += AutoSaveTimer_Tick;
+                autoSaveTimer.Start();
+
+                // 1. Create the visual countdown label
+                lblBuffTime = new Label();
+                lblBuffTime.AutoSize = true;
+                lblBuffTime.Font = new Font("Segoe UI", 10, FontStyle.Regular);
+                lblBuffTime.ForeColor = Color.Orange;
+                lblBuffTime.BackColor = Color.Transparent;
+                lblBuffTime.Left = 600;
+                lblBuffTime.Top = 40; // Place it right under your Health/Coordinate labels
+                lblBuffTime.Visible = false; // Keep it hidden until he eats a buff
+                this.Controls.Add(lblBuffTime);
+
+                // 1. Create the Chat Box Background
+                pbChatBox = new PictureBox();
+                pbChatBox.Image = Properties.Resources.chat_box;
+                pbChatBox.Width = 400; // Adjust based on your image size
+                pbChatBox.Height = 150;
+                pbChatBox.SizeMode = PictureBoxSizeMode.StretchImage;
+
+                // Center it near the bottom of the screen
+                pbChatBox.Left = (this.ClientSize.Width - pbChatBox.Width) / 2;
+                pbChatBox.Top = this.ClientSize.Height - pbChatBox.Height - 50;
+                pbChatBox.Visible = false; // Hide it to start
+                this.Controls.Add(pbChatBox);
+
+                // 2. Create the Text inside the Chat Box
+                lblChatText = new Label();
+                lblChatText.Text = "Whoa! I feel so fast!\nI can definitely outrun Azrael now!\n\n(Press SPACE to continue)";
+                lblChatText.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+                lblChatText.ForeColor = Color.White;
+                lblChatText.AutoSize = true;
+                lblChatText.Left = 20;
+                lblChatText.Top = 20;
+
+                // WINFORMS MAGIC TRICK: Set the Parent to the PictureBox so the background is truly transparent!
+                lblChatText.Parent = pbChatBox;
+                lblChatText.BackColor = Color.Transparent;
+                lblChatText.BringToFront();
+
+                // healthbar picture box (RIGHT SIDE)
+                pbHealthBar = new PictureBox();
+                pbHealthBar.Width = 150;
+                pbHealthBar.Height = 30;
+                pbHealthBar.SizeMode = PictureBoxSizeMode.StretchImage;
+                pbHealthBar.BackColor = Color.Transparent;
+                pbHealthBar.Left = this.ClientSize.Width - 170;  // Right side with padding
+                pbHealthBar.Top = 10;
+                this.Controls.Add(pbHealthBar);
+                pbHealthBar.BringToFront();
+
+                // NEW: Health text display (shows HP/MaxHP)
+                lblHPDisplay = new Label();
+                lblHPDisplay.AutoSize = true;
+                lblHPDisplay.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                lblHPDisplay.ForeColor = Color.White;
+                lblHPDisplay.BackColor = Color.Transparent;
+                lblHPDisplay.Text = "HP: 100/100";
+                lblHPDisplay.Left = pbHealthBar.Left;
+                lblHPDisplay.Top = pbHealthBar.Bottom + 2;
+                this.Controls.Add(lblHPDisplay);
+                lblHPDisplay.BringToFront();
+
+                // NEW: Damage indicator label (appears when hit)
+                lblDamage = new Label();
+                lblDamage.AutoSize = true;
+                lblDamage.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+                lblDamage.ForeColor = Color.Red;
+                lblDamage.BackColor = Color.Transparent;
+                lblDamage.Text = "";
+                lblDamage.Left = pbHealthBar.Left + 20;
+                lblDamage.Top = pbHealthBar.Top + 50;
+                lblDamage.Visible = false;
+                this.Controls.Add(lblDamage);
+                lblDamage.BringToFront();
+
+                // --- ADD THE PLAYER PORTRAIT ---
+                pbPlayerIcon = new PictureBox();
+                pbPlayerIcon.Width = 60;
+                pbPlayerIcon.Height = 60;
+                pbPlayerIcon.SizeMode = PictureBoxSizeMode.Zoom;
+                pbPlayerIcon.BackColor = Color.Transparent;
+
+                pbPlayerIcon.Image = Properties.Resources.playericon;
+
+                // Position it to the left of the health bar
+                pbPlayerIcon.Left = pbHealthBar.Left - 70;
+                pbPlayerIcon.Top = pbHealthBar.Top - 5;
+
+                this.Controls.Add(pbPlayerIcon);
+                pbPlayerIcon.BringToFront();
+
+                // 1. Create the Time Trial UI (RIGHT SIDE)
+                lblScoreTimer = new Label();
+                lblScoreTimer.AutoSize = true;
+                lblScoreTimer.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+                lblScoreTimer.ForeColor = Color.Gold;
+                lblScoreTimer.BackColor = Color.Transparent;
+                lblScoreTimer.Text = "Time: 0s";
+
+                lblScoreTimer.Left = this.ClientSize.Width - 170;
+                lblScoreTimer.Top = 50;
+
+                this.Controls.Add(lblScoreTimer);
+                lblScoreTimer.BringToFront();
+
+                // Create the Score Label (for coins collected) (RIGHT SIDE)
+                lblScore = new Label();
+                lblScore.AutoSize = true;
+                lblScore.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+                lblScore.ForeColor = Color.Yellow;
+                lblScore.BackColor = Color.Transparent;
+                lblScore.Text = "Coins: 0/6";
+
+                lblScore.Left = this.ClientSize.Width - 170;
+                lblScore.Top = lblScoreTimer.Bottom + 2;
+
+                this.Controls.Add(lblScore);
+                lblScore.BringToFront();
+
+                System.Diagnostics.Debug.WriteLine("? UI elements created");
+
+                // 2. Setup the Stopwatch Timer
+                scoreTimer = new System.Windows.Forms.Timer();
+                scoreTimer.Interval = 1000; // Ticks every 1 second
+                scoreTimer.Tick += ScoreTimer_Tick;
+                scoreTimer.Start();
+
+                // -----------------------------
+
+                // 2. Setup the Timer to tick EVERY 1 SECOND
+                buffTimer = new System.Windows.Forms.Timer();
+                buffTimer.Interval = 1000;
+                buffTimer.Tick += BuffTimer_Tick;
+
+                UpdateHealthBar();
+
+                // Load the animated coin frames!
+                coinFrames = new Image[]
+                {
+                    Properties.Resources.coin0,
+                    Properties.Resources.coin1,
+                    Properties.Resources.coin2,
+                    Properties.Resources.coin3,
+                    Properties.Resources.coin4
+                };
+
+                // Load Azrael animation frames!
+                azraelFrames = new Image[] { 
+                    Properties.Resources.azrael0, Properties.Resources.azrael1,
+                    Properties.Resources.azrael2, Properties.Resources.azrael3,
+                    Properties.Resources.azrael4
+                };
+
+                // Setup entity animation timer for coins and Azrael
+                entityAnimationTimer = new System.Windows.Forms.Timer();
+                entityAnimationTimer.Interval = 150;
+                entityAnimationTimer.Tick += EntityAnimationTimer_Tick;
+                entityAnimationTimer.Start();
+
+                System.Diagnostics.Debug.WriteLine("? Animation frames and timers loaded");
+
+                // Scan the form for our red hitboxes
+                foreach (Control x in this.Controls)
+                {
+                    if (x is PictureBox && x.Tag != null && x.Tag.ToString() == "obstacle")
+                    {
+                        obstacles.Add((PictureBox)x);
+
+                        // --- ADD THIS LINE ---
+                        x.Visible = false; // Hides the red box, but its collision math still works perfectly!
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine("? Obstacles found: " + obstacles.Count);
+
+                // Pass obstacles to the Smurf Control
+                smurfControl.SetObstacles(obstacles);
+
+                SpawnBluePotion();
+                System.Diagnostics.Debug.WriteLine("? Blue potion spawned");
+
+                SpawnSpeedBuff();
+                System.Diagnostics.Debug.WriteLine("? Speed buff spawned");
+
+                SpawnAzrael();
+                System.Diagnostics.Debug.WriteLine("? Azrael spawned");
+
+                SpawnAllCoins();
+                System.Diagnostics.Debug.WriteLine("? Coins spawned");
+
+                System.Diagnostics.Debug.WriteLine("??? FORM LOAD COMPLETE - GAME READY ???");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("??? CRITICAL ERROR IN Form1_Load: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("Stack Trace: " + ex.StackTrace);
+
+                // Get the real inner exception for database errors
+                string innerExceptionMessage = ex.InnerException?.Message ?? "No inner exception";
+                if (ex.InnerException?.InnerException != null)
+                {
+                    innerExceptionMessage += "\n\nDeep Inner: " + ex.InnerException.InnerException.Message;
+                }
+
+                System.Diagnostics.Debug.WriteLine("Inner Exception: " + innerExceptionMessage);
+
+                MessageBox.Show(
+                    $"Critical Error in Form1_Load:\n\n{ex.Message}\n\n" +
+                    $"Inner Exception:\n{innerExceptionMessage}\n\n" +
+                    $"Stack Trace: {ex.StackTrace}",
+                    "Critical Error"
+                );
+                this.Close();
+            }
         }
 
-        // This runs when 3 seconds have passed without moving
-        private void IdleWaitTimer_Tick(object sender, EventArgs e)
+        // Animates coins and Azrael
+        private void EntityAnimationTimer_Tick(object sender, EventArgs e)
         {
-            idleWaitTimer.Stop();
-
-            isYawning = true;     // Tell the animation loop to switch to yawning
-            currentIdleFrame = 5; // Jump directly to the first yawn frame
-        }
-
-        private void AnimationTimer_Tick(object sender, EventArgs e)
-        {
-            // Draw the current frame
-            pbPlayer.Image = idleFrames[currentIdleFrame];
-            currentIdleFrame++;
-
-            if (isYawning == false)
-            {
-                // NORMAL BREATHING: Loop only between frames 0, 1, 2, 3, 4
-                if (currentIdleFrame > 4)
-                {
-                    currentIdleFrame = 0;
-                }
-            }
-            else
-            {
-                // YAWNING: Loop only between frames 5, 6, 7, 8
-                if (currentIdleFrame > 8)
-                {
-                    // He finished the yawn! 
-                    isYawning = false;    // Turn off yawning mode
-                    currentIdleFrame = 0; // Go back to breathing frame 0
-
-                    // --- ADD THIS NEW LINE ---
-                    // Restart the 10-second countdown for the next yawn!
-                    idleWaitTimer.Start();
-                }
-            }
-
             // --- AZRAEL IDLE ANIMATION ---
             if (pbAzrael != null && pbAzrael.Visible)
             {
@@ -502,7 +543,7 @@ namespace SmurfGame.WinForms
                 // 3. Time's up! (0 seconds left)
                 buffTimer.Stop();
 
-                speed -= activeSpeedBoost; // Take away the speed
+                smurfControl.Speed -= activeSpeedBoost; // Take away the speed
                 activeSpeedBoost = 0;      // Reset the tracker
 
                 lblBuffTime.Visible = false; // Hide the label from the screen
@@ -521,11 +562,6 @@ namespace SmurfGame.WinForms
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            // Stop the timers because the player is moving!
-            idleWaitTimer.Stop();
-            animationTimer.Stop();
-            isYawning = false; //Reset the yawn state
-
             if (isGameOver)
             {
                 return; // The game is over! Ignore all key presses!
@@ -540,8 +576,8 @@ namespace SmurfGame.WinForms
                     pbChatBox.Visible = false; // Hide chat
                     isGamePaused = false;      // Unfreeze game
 
-                    // Resume the timers!
-                    animationTimer.Start();
+                    // Resume the Smurf's animation!
+                    smurfControl.ResumeAnimation();
                     if (activeSpeedBoost > 0) buffTimer.Start();
                 }
 
@@ -549,66 +585,29 @@ namespace SmurfGame.WinForms
                 return;
             }
 
-            // (Keep your exact movement switch statement here)
-            // Replace your current switch statement in Form1_KeyDown with this:
+            // Movement controls
             switch (e.KeyCode)
             {
                 case Keys.Z:
-                    // Notice the new CanMove check here!
-                    if (pbPlayer.Top > 0 && CanMove(pbPlayer.Left, pbPlayer.Top - speed))
-                    {
-                        pbPlayer.Top -= speed;
-                        pbPlayer.Image = upFrames[currentUpFrame];
-                        currentUpFrame++;
-                        if (currentUpFrame >= upFrames.Length)
-                        {
-                            currentUpFrame = 0;
-                        }
-                    }
+                    smurfControl.MoveUp();
                     break;
                 case Keys.S:
-                    if (pbPlayer.Bottom < this.ClientSize.Height && CanMove(pbPlayer.Left, pbPlayer.Top + speed))
-                    {
-                        pbPlayer.Top += speed;
-                        pbPlayer.Image = downFrames[currentDownFrame];
-                        currentDownFrame++;
-                        if (currentDownFrame >= downFrames.Length)
-                        {
-                            currentDownFrame = 0;
-                        }
-                    }
+                    smurfControl.MoveDown();
                     break;
                 case Keys.Q:
-                    if (pbPlayer.Left > 0 && CanMove(pbPlayer.Left - speed, pbPlayer.Top))
-                    {
-                        pbPlayer.Left -= speed;
-                        pbPlayer.Image = leftFrames[currentLeftFrame];
-                        currentLeftFrame++;
-                        if (currentLeftFrame >= leftFrames.Length)
-                        {
-                            currentLeftFrame = 0;
-                        }
-                    }
+                    smurfControl.MoveLeft();
                     break;
                 case Keys.D:
-                    if (pbPlayer.Right < this.ClientSize.Width && CanMove(pbPlayer.Left + speed, pbPlayer.Top))
-                    {
-                        pbPlayer.Left += speed;
-                        pbPlayer.Image = rightFrames[currentRightFrame];
-                        currentRightFrame++;
-                        if (currentRightFrame >= rightFrames.Length)
-                        {
-                            currentRightFrame = 0;
-                        }
-                    }
+                    smurfControl.MoveRight();
                     break;
             }
 
             // Update the object's coordinates in memory (The timer will save them to the DB)
             if (currentSmurf != null)
             {
-                currentSmurf.X = pbPlayer.Left;
-                currentSmurf.Y = pbPlayer.Top;
+                Point smurfPos = smurfControl.GetPosition();
+                currentSmurf.X = smurfPos.X;
+                currentSmurf.Y = smurfPos.Y;
 
                 lblCoordinates.Text = $"X: {currentSmurf.X} | Y: {currentSmurf.Y}";
             }
@@ -652,6 +651,9 @@ namespace SmurfGame.WinForms
 
             currentAzrael = new Azrael
             {
+                Name = "Azrael",
+                Health = 100,
+                MaxHealth = 100,
                 Damage = 60,
                 X = safeSpot.X,
                 Y = safeSpot.Y
@@ -712,7 +714,7 @@ namespace SmurfGame.WinForms
 
         private void CheckCollisions()
         {
-            if (pbBluePotion !=null && pbBluePotion.Visible && pbPlayer.Bounds.IntersectsWith(pbBluePotion.Bounds))
+            if (pbBluePotion != null && pbBluePotion.Visible && smurfControl.GetBounds().IntersectsWith(pbBluePotion.Bounds))
             {
                 pbBluePotion.Visible = false; // Hide the potion
                 currentBluePotion.IsConsumed = true; // Mark it as consumed in the database
@@ -732,7 +734,7 @@ namespace SmurfGame.WinForms
             }
 
             // --- SPEED BUFF COLLISION ---
-            if (pbSpeedBuff != null && pbSpeedBuff.Visible && pbPlayer.Bounds.IntersectsWith(pbSpeedBuff.Bounds))
+            if (pbSpeedBuff != null && pbSpeedBuff.Visible && smurfControl.GetBounds().IntersectsWith(pbSpeedBuff.Bounds))
             {
                 // 1. Hide the item and update database
                 pbSpeedBuff.Visible = false;
@@ -742,7 +744,7 @@ namespace SmurfGame.WinForms
                 if (activeSpeedBoost == 0)
                 {
                     activeSpeedBoost = currentSpeedBuff.SpeedBoostAmount;
-                    speed += activeSpeedBoost;
+                    smurfControl.Speed += activeSpeedBoost;
                 }
 
                 // 3. Reset the 10-second timer and UI label
@@ -762,7 +764,6 @@ namespace SmurfGame.WinForms
                     pbChatBox.BringToFront();
 
                     // Stop timers so Azrael and the buff clock pause while reading!
-                    animationTimer.Stop();
                     buffTimer.Stop();
                 }
 
@@ -771,19 +772,37 @@ namespace SmurfGame.WinForms
             }
 
             // --- AZRAEL COLLISION (ENEMY) ---
-            if (pbAzrael != null && pbAzrael.Visible && pbPlayer.Bounds.IntersectsWith(pbAzrael.Bounds))
+            if (pbAzrael != null && pbAzrael.Visible && smurfControl.GetBounds().IntersectsWith(pbAzrael.Bounds))
             {
                 // 1. Take damage!
-                currentSmurf.Health -= currentAzrael.Damage;
+                int damageAmount = currentAzrael.Damage;
+                currentSmurf.Health -= damageAmount;
 
-                // 2. Check if Papa Smurf died
+                // 2. Show damage indicator
+                if (lblDamage != null)
+                {
+                    lblDamage.Text = $"- {damageAmount} HP!";
+                    lblDamage.Visible = true;
+
+                    // Hide it after 2 seconds
+                    var damageTimer = new System.Windows.Forms.Timer();
+                    damageTimer.Interval = 2000;
+                    damageTimer.Tick += (s, e) =>
+                    {
+                        lblDamage.Visible = false;
+                        damageTimer.Stop();
+                        damageTimer.Dispose();
+                    };
+                    damageTimer.Start();
+                }
+
+                // 3. Check if Papa Smurf died
                 if (currentSmurf.Health <= 0)
                 {
                     currentSmurf.Health = 0;
                     UpdateHealthBar();
 
                     // Stop everything
-                    animationTimer.Stop();
                     MessageBox.Show("Oh no! Azrael caught you! Game Over.", "Defeat");
 
                     // Close the form to end the application
@@ -806,7 +825,7 @@ namespace SmurfGame.WinForms
                 PictureBox currentPbCoin = pbCoinsList[i];
                 Coin currentDbCoin = currentCoinsList[i];
 
-                if (currentPbCoin.Visible && pbPlayer.Bounds.IntersectsWith(currentPbCoin.Bounds))
+                if (currentPbCoin.Visible && smurfControl.GetBounds().IntersectsWith(currentPbCoin.Bounds))
                 {
                     // 1. Hide it from screen and mark in DB
                     currentPbCoin.Visible = false;
@@ -816,14 +835,20 @@ namespace SmurfGame.WinForms
                     pbCoinsList.RemoveAt(i);
                     currentCoinsList.RemoveAt(i);
 
-                    // 3. Check if that was the last coin!
+                    // 3. Update the score display
+                    if (lblScore != null)
+                    {
+                        int coinsRemaining = pbCoinsList.Count;
+                        lblScore.Text = $"Coins: {6 - coinsRemaining}/6";
+                    }
+
+                    // 4. Check if that was the last coin!
                     if (pbCoinsList.Count == 0)
                     {
                         scoreTimer.Stop(); // Stop the clock!
 
                         // Freeze the game and show the victory score
                         isGamePaused = true;
-                        animationTimer.Stop();
 
                         // Save the fastest time to the database
                         if (currentSmurf.BestTime == null || secondsElapsed < currentSmurf.BestTime)
@@ -855,8 +880,11 @@ namespace SmurfGame.WinForms
                 // 2. Ask our helper method for the correct image and apply it!
                 pbHealthBar.Image = GetClosestHealthImage(percent);
 
-                // Optional: If you still want to show the exact number next to the bar
-                // lblHealth.Text = $"{Math.Round(percent)}%";
+                // 3. Update the HP text display
+                if (lblHPDisplay != null)
+                {
+                    lblHPDisplay.Text = $"HP: {currentSmurf.Health}/{currentSmurf.MaxHealth}";
+                }
             }
         }
 
@@ -865,6 +893,16 @@ namespace SmurfGame.WinForms
             if (autoSaveTimer != null)
             {
                 autoSaveTimer.Stop(); // Stop the timer so it doesn't crash while closing
+            }
+
+            if (entityAnimationTimer != null)
+            {
+                entityAnimationTimer.Stop();
+            }
+
+            if (smurfControl != null)
+            {
+                smurfControl.Dispose();
             }
 
             if (db != null)
@@ -893,30 +931,9 @@ namespace SmurfGame.WinForms
 
         }
 
-        // --- Checks that i can move ---
-        private bool CanMove(int futureX, int futureY)
-        {
-            // Create a temporary "ghost" of where the Smurf is trying to go
-            Rectangle ghostSmurf = new Rectangle(futureX, futureY, pbPlayer.Width, pbPlayer.Height);
-
-            // Check if the ghost hits any of our invisible blue walls
-            foreach (PictureBox wall in obstacles)
-            {
-                if (ghostSmurf.IntersectsWith(wall.Bounds))
-                {
-                    return false; // He hit a wall! Deny the movement.
-                }
-            }
-
-            return true; // The path is clear!
-        }
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
-            isYawning = false;
-            currentIdleFrame = 0; // Reset to the first idle frame
-
-            idleWaitTimer.Start(); // Start counting to 3 seconds
-            animationTimer.Start(); // Start the breathing animation
+            // SmurfControl handles animation internally
         }
 
         private void SpawnAllCoins()

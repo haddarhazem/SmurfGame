@@ -35,9 +35,14 @@ namespace SmurfGame.WinForms
             // 3. Fetch the Data manually
             try
             {
-                using (var db = new SmurfGameContext(new DbContextOptions<SmurfGameContext>()))
+                var optionsBuilder = new DbContextOptionsBuilder<SmurfGameContext>();
+                optionsBuilder.UseSqlServer(
+                    @"server=(LocalDB)\MSSQLLocalDB;Initial Catalog=SmurfGameDB;Integrated Security=true"
+                );
+
+                using (var db = new SmurfGameContext(optionsBuilder.Options))
                 {
-                    // Grab the raw Smurfs from the database
+                    // Grab the raw Smurfs from the database, ordered by best time
                     var topScores = db.Smurfs
                         .Where(s => s.BestTime != null)
                         .OrderBy(s => s.BestTime)
@@ -52,7 +57,7 @@ namespace SmurfGame.WinForms
                     // A little safety check so we know if the database is actually empty!
                     if (topScores.Count == 0)
                     {
-                        MessageBox.Show("The grid is working, but no winning scores were found in the database!", "Database is Empty");
+                        MessageBox.Show("The leaderboard is ready! No winning scores yet. Start playing to see scores!", "Welcome!");
                     }
                 }
             }

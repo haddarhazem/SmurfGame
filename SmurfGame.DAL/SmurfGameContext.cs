@@ -38,11 +38,14 @@ namespace SmurfGame.DAL
             modelBuilder.Entity<Smurf>().ToTable("Smurfs");
             modelBuilder.Entity<Spider>().ToTable("Spiders");
             modelBuilder.Entity<BzzFly>().ToTable("BzzFlies");
+            modelBuilder.Entity<Azrael>().ToTable("Azraels");
 
             modelBuilder.Entity<Item>().ToTable("Items");
             modelBuilder.Entity<Berry>().ToTable("Berries");
             modelBuilder.Entity<RedPotion>().ToTable("RedPotions");
             modelBuilder.Entity<BluePotion>().ToTable("BluePotions");
+            modelBuilder.Entity<SpeedBuff>().ToTable("SpeedBuffs");
+            modelBuilder.Entity<Coin>().ToTable("Coins");
 
             // ── Configuration Creature ──────────
             modelBuilder.Entity<Creature>(entity =>
