@@ -63,9 +63,9 @@ namespace SmurfGame.WinForms.Properties {
         /// <summary>
         ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap kratos_bas {
+        internal static System.Drawing.Bitmap gargamel_back {
             get {
-                object obj = ResourceManager.GetObject("kratos_bas", resourceCulture);
+                object obj = ResourceManager.GetObject("gargamel_back", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -73,9 +73,9 @@ namespace SmurfGame.WinForms.Properties {
         /// <summary>
         ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap kratos_droite {
+        internal static System.Drawing.Bitmap red_buff {
             get {
-                object obj = ResourceManager.GetObject("kratos_droite", resourceCulture);
+                object obj = ResourceManager.GetObject("red_buff", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -83,69 +83,9 @@ namespace SmurfGame.WinForms.Properties {
         /// <summary>
         ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap kratos_gauche {
+        internal static System.Drawing.Bitmap yellow_buff {
             get {
-                object obj = ResourceManager.GetObject("kratos_gauche", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap kratos_haut {
-            get {
-                object obj = ResourceManager.GetObject("kratos_haut", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap mario_bas {
-            get {
-                object obj = ResourceManager.GetObject("mario_bas", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap mario_droite {
-            get {
-                object obj = ResourceManager.GetObject("mario_droite", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap mario_gauche {
-            get {
-                object obj = ResourceManager.GetObject("mario_gauche", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap mario_haut {
-            get {
-                object obj = ResourceManager.GetObject("mario_haut", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap maze {
-            get {
-                object obj = ResourceManager.GetObject("maze", resourceCulture);
+                object obj = ResourceManager.GetObject("yellow_buff", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
