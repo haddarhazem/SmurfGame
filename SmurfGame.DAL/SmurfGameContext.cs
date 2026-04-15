@@ -20,6 +20,8 @@ namespace SmurfGame.DAL
         public DbSet<BluePotion> BluePotions { get; set; }
         public DbSet<SpeedBuff> SpeedBuffs { get; set; }
         public DbSet<Azrael> Azraels { get; set; }
+        public DbSet<HorizontalCat> HorizontalCats { get; set; }
+        public DbSet<VerticalCat> VerticalCats { get; set; }
         public DbSet<Coin> Coins { get; set; }
         // ── Connexion ───────────────────────────
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -39,6 +41,8 @@ namespace SmurfGame.DAL
             modelBuilder.Entity<Spider>().ToTable("Spiders");
             modelBuilder.Entity<BzzFly>().ToTable("BzzFlies");
             modelBuilder.Entity<Azrael>().ToTable("Azraels");
+            modelBuilder.Entity<HorizontalCat>().ToTable("HorizontalCats");
+            modelBuilder.Entity<VerticalCat>().ToTable("VerticalCats");
 
             modelBuilder.Entity<Item>().ToTable("Items");
             modelBuilder.Entity<Berry>().ToTable("Berries");

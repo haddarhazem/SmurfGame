@@ -47,9 +47,13 @@ namespace SmurfGame.WinForms
         private int buffTimeRemaining = 0;
         private Label lblBuffTime;
 
-        // --- AZRAEL VARIABLES ---
-        private PictureBox pbAzrael;
-        private Azrael currentAzrael;
+        // --- ENEMY VARIABLES (MULTIPLE CATS) ---
+        private List<PictureBox> pbEnemies = new List<PictureBox>();
+        private List<Azrael> azraels = new List<Azrael>();
+        private List<HorizontalCat> horizontalCats = new List<HorizontalCat>();
+        private List<VerticalCat> verticalCats = new List<VerticalCat>();
+
+        private System.Windows.Forms.Timer enemyMovementTimer;
 
         // --- CHAT BOX VARIABLES ---
         private PictureBox pbChatBox;
@@ -122,9 +126,12 @@ namespace SmurfGame.WinForms
                 if (pbSpeedBuff != null && pbSpeedBuff.Visible && spawnZone.IntersectsWith(pbSpeedBuff.Bounds))
                     isSafeSpot = false;
 
-                // Check Azrael
-                if (pbAzrael != null && pbAzrael.Visible && spawnZone.IntersectsWith(pbAzrael.Bounds))
-                    isSafeSpot = false;
+                // Check all enemies
+                foreach (PictureBox enemy in pbEnemies)
+                {
+                    if (enemy != null && enemy.Visible && spawnZone.IntersectsWith(enemy.Bounds))
+                        isSafeSpot = false;
+                }
 
                 // --- FIX: Check the LIST of coins, not just the old single variable! ---
                 foreach (PictureBox existingCoin in pbCoinsList)
@@ -462,8 +469,8 @@ namespace SmurfGame.WinForms
                 SpawnSpeedBuff();
                 System.Diagnostics.Debug.WriteLine("? Speed buff spawned");
 
-                SpawnAzrael();
-                System.Diagnostics.Debug.WriteLine("? Azrael spawned");
+                SpawnAllEnemies();
+                System.Diagnostics.Debug.WriteLine("? All enemies spawned");
 
                 SpawnAllCoins();
                 System.Diagnostics.Debug.WriteLine("? Coins spawned");
@@ -494,16 +501,32 @@ namespace SmurfGame.WinForms
             }
         }
 
-        // Animates coins and Azrael
+        // Animates coins and enemies
         private void EntityAnimationTimer_Tick(object sender, EventArgs e)
         {
-            // --- AZRAEL IDLE ANIMATION ---
-            if (pbAzrael != null && pbAzrael.Visible)
+            // --- ENEMIES IDLE ANIMATION ---
+            if (pbEnemies.Count > 0)
             {
-                pbAzrael.Image = azraelFrames[currentAzraelFrame];
-                currentAzraelFrame++;
+                // Animate Azrael (first enemy)
+                if (pbEnemies[0].Visible)
+                {
+                    pbEnemies[0].Image = azraelFrames[currentAzraelFrame];
+                }
 
-                // Loop back to the first frame if we reach the end
+                // Animate horizontal and vertical cats with different frames
+                if (pbEnemies.Count > 1 && pbEnemies[1].Visible)
+                {
+                    int frameIndex = (currentAzraelFrame + 1) % azraelFrames.Length;
+                    pbEnemies[1].Image = azraelFrames[frameIndex];
+                }
+
+                if (pbEnemies.Count > 2 && pbEnemies[2].Visible)
+                {
+                    int frameIndex = (currentAzraelFrame + 2) % azraelFrames.Length;
+                    pbEnemies[2].Image = azraelFrames[frameIndex];
+                }
+
+                currentAzraelFrame++;
                 if (currentAzraelFrame >= azraelFrames.Length)
                 {
                     currentAzraelFrame = 0;
@@ -645,40 +668,233 @@ namespace SmurfGame.WinForms
             this.Controls.Add(pbBluePotion);
         }
 
-        private void SpawnAzrael()
+        private void SpawnAllEnemies()
         {
-            Point safeSpot = GetSafeSpawnLocation();
+            // Define lane positions to avoid
+            int horizontalCatLaneY = 454;   // Horizontal cat's lane (Y position)
+            int verticalCatLaneX = 752;     // Vertical cat's lane (X position)
+            int laneBuffer = 100;           // Buffer zone around lanes to avoid
 
-            currentAzrael = new Azrael
+            // Spawn 1 stationary Azrael (big cat) - AWAY FROM LANES
+            Point azraelSpot = GetSafeSpawnLocation();
+
+            // Keep trying to find a spawn location that's not in the lanes
+            int maxAttempts = 50;
+            int attempts = 0;
+            while ((Math.Abs(azraelSpot.X - verticalCatLaneX) < laneBuffer ||
+                    Math.Abs(azraelSpot.Y - horizontalCatLaneY) < laneBuffer) && attempts < maxAttempts)
+            {
+                azraelSpot = GetSafeSpawnLocation();
+                attempts++;
+            }
+
+            Azrael azrael = new Azrael
             {
                 Name = "Azrael",
                 Health = 100,
                 MaxHealth = 100,
-                Damage = 60,
-                X = safeSpot.X,
-                Y = safeSpot.Y
+                Damage = 30,  // Deals 30 HP damage
+                X = azraelSpot.X,
+                Y = azraelSpot.Y
             };
-
+            azraels.Add(azrael);
             if (db != null)
             {
-                db.Azraels.Add(currentAzrael);
+                db.Azraels.Add(azrael);
+            }
+
+            // Spawn 1 horizontal-moving cat (BOTTOM LANE)
+            // Fixed X position at left, random X, but fixed Y at 454
+            int hCatRandomX = rand.Next(50, this.ClientSize.Width - 100);
+            int hCatFixedLane = 454;  // Fixed Y position at bottom lane
+
+            HorizontalCat hCat = new HorizontalCat
+            {
+                Name = "HorizontalCat",
+                Health = 100,
+                MaxHealth = 100,
+                Damage = 30,
+                Speed = 3,
+                Direction = 1,  // Start moving right
+                X = hCatRandomX,
+                Y = hCatFixedLane
+            };
+            horizontalCats.Add(hCat);
+            if (db != null)
+            {
+                db.HorizontalCats.Add(hCat);
+            }
+
+            // Spawn 1 vertical-moving cat (RIGHT SIDE LANE)
+            // Fixed X position at 752, random Y
+            Point vCatSpot = GetSafeSpawnLocation();
+            int vCatFixedLane = 752;  // Fixed X position at right lane
+            int vCatRandomY = rand.Next(50, this.ClientSize.Height - 100);
+
+            VerticalCat vCat = new VerticalCat
+            {
+                Name = "VerticalCat",
+                Health = 100,
+                MaxHealth = 100,
+                Damage = 30,
+                Speed = 3,
+                Direction = 1,  // Start moving down
+                X = vCatFixedLane,
+                Y = vCatRandomY
+            };
+            verticalCats.Add(vCat);
+            if (db != null)
+            {
+                db.VerticalCats.Add(vCat);
                 db.SaveChanges();
             }
 
-            if (pbAzrael == null) // Only create the PictureBox if it doesn't exist yet
+            // Create PictureBoxes for each enemy and add to form
+            // Azrael
+            PictureBox pbAzrael = new PictureBox();
+            pbAzrael.Width = 60;
+            pbAzrael.Height = 60;
+            pbAzrael.Left = azrael.X;
+            pbAzrael.Top = azrael.Y;
+            pbAzrael.SizeMode = PictureBoxSizeMode.Zoom;
+            pbAzrael.BackColor = Color.Transparent;
+            pbAzrael.Image = Properties.Resources.azrael0;
+            pbAzrael.Tag = "azrael";
+            this.Controls.Add(pbAzrael);
+            pbEnemies.Add(pbAzrael);
+
+            // Horizontal Cat
+            PictureBox pbHCat = new PictureBox();
+            pbHCat.Width = 50;
+            pbHCat.Height = 50;
+            pbHCat.Left = hCat.X;
+            pbHCat.Top = hCat.Y;
+            pbHCat.SizeMode = PictureBoxSizeMode.Zoom;
+            pbHCat.BackColor = Color.Transparent;
+            pbHCat.Image = Properties.Resources.azrael1;  // Using Azrael frames for now
+            pbHCat.Tag = "horizontal";
+            this.Controls.Add(pbHCat);
+            pbEnemies.Add(pbHCat);
+
+            // Vertical Cat
+            PictureBox pbVCat = new PictureBox();
+            pbVCat.Width = 50;
+            pbVCat.Height = 50;
+            pbVCat.Left = vCat.X;
+            pbVCat.Top = vCat.Y;
+            pbVCat.SizeMode = PictureBoxSizeMode.Zoom;
+            pbVCat.BackColor = Color.Transparent;
+            pbVCat.Image = Properties.Resources.azrael2;  // Using different Azrael frame
+            pbVCat.Tag = "vertical";
+            this.Controls.Add(pbVCat);
+            pbEnemies.Add(pbVCat);
+
+            // Start the enemy movement timer for moving cats
+            enemyMovementTimer = new System.Windows.Forms.Timer();
+            enemyMovementTimer.Interval = 200;  // Move every 200ms
+            enemyMovementTimer.Tick += EnemyMovementTimer_Tick;
+            enemyMovementTimer.Start();
+        }
+
+        private void EnemyMovementTimer_Tick(object sender, EventArgs e)
+        {
+            // Update horizontal cat position (FIXED Y LANE AT 454)
+            if (horizontalCats.Count > 0 && pbEnemies.Count > 1)
             {
-                pbAzrael = new PictureBox();
-                pbAzrael.Width = 60; // Azrael might need to be slightly bigger than an item
-                pbAzrael.Height = 60;
-                pbAzrael.SizeMode = PictureBoxSizeMode.Zoom;
-                pbAzrael.BackColor = Color.Transparent;
-                this.Controls.Add(pbAzrael);
+                HorizontalCat hCat = horizontalCats[0];
+                PictureBox pbHCat = pbEnemies[1];
+
+                // Keep horizontal cat in fixed lane at Y: 454
+                hCat.Y = 454;
+
+                // Calculate potential new position
+                int futureX = hCat.X + hCat.Direction * hCat.Speed;
+
+                // Check if new position would collide with obstacles or boundaries
+                Rectangle ghostCat = new Rectangle(futureX, hCat.Y, 50, 50);
+                bool canMove = true;
+
+                // Check boundaries
+                if (futureX <= 10 || futureX >= this.ClientSize.Width - 80)
+                {
+                    hCat.Direction *= -1;  // Bounce off edges
+                    canMove = false;
+                }
+
+                // Check obstacles
+                if (canMove)
+                {
+                    foreach (PictureBox wall in obstacles)
+                    {
+                        if (ghostCat.IntersectsWith(wall.Bounds))
+                        {
+                            hCat.Direction *= -1;  // Bounce off obstacles
+                            canMove = false;
+                            break;
+                        }
+                    }
+                }
+
+                // Only move if no collision
+                if (canMove)
+                {
+                    hCat.X += hCat.Direction * hCat.Speed;
+                }
+
+                pbHCat.Left = hCat.X;
+                pbHCat.Top = hCat.Y;
             }
 
-            pbAzrael.Left = currentAzrael.X;
-            pbAzrael.Top = currentAzrael.Y;
-            pbAzrael.Visible = true;
-            pbAzrael.BringToFront();
+            // Update vertical cat position (FIXED X LANE AT 752)
+            if (verticalCats.Count > 0 && pbEnemies.Count > 2)
+            {
+                VerticalCat vCat = verticalCats[0];
+                PictureBox pbVCat = pbEnemies[2];
+
+                // Keep vertical cat in fixed lane at X: 752
+                vCat.X = 752;
+
+                // Calculate potential new position
+                int futureY = vCat.Y + vCat.Direction * vCat.Speed;
+
+                // Check if new position would collide with obstacles or boundaries
+                Rectangle ghostCat = new Rectangle(vCat.X, futureY, 50, 50);
+                bool canMove = true;
+
+                // Check boundaries
+                if (futureY <= 10 || futureY >= this.ClientSize.Height - 80)
+                {
+                    vCat.Direction *= -1;  // Bounce off edges
+                    canMove = false;
+                }
+
+                // Check obstacles
+                if (canMove)
+                {
+                    foreach (PictureBox wall in obstacles)
+                    {
+                        if (ghostCat.IntersectsWith(wall.Bounds))
+                        {
+                            vCat.Direction *= -1;  // Bounce off obstacles
+                            canMove = false;
+                            break;
+                        }
+                    }
+                }
+
+                // Only move if no collision
+                if (canMove)
+                {
+                    vCat.Y += vCat.Direction * vCat.Speed;
+                }
+
+                pbVCat.Left = vCat.X;
+                pbVCat.Top = vCat.Y;
+            }
+        }
+
+        private void SpawnAzrael()
+        {
         }
         private void SpawnSpeedBuff()
         {
@@ -771,51 +987,26 @@ namespace SmurfGame.WinForms
                 SpawnSpeedBuff();
             }
 
-            // --- AZRAEL COLLISION (ENEMY) ---
-            if (pbAzrael != null && pbAzrael.Visible && smurfControl.GetBounds().IntersectsWith(pbAzrael.Bounds))
+            // --- ENEMY COLLISION (ALL ENEMIES) ---
+            // Check collisions with Azrael (stationary cat)
+            if (azraels.Count > 0 && pbEnemies.Count > 0 && pbEnemies[0].Visible && 
+                smurfControl.GetBounds().IntersectsWith(pbEnemies[0].Bounds))
             {
-                // 1. Take damage!
-                int damageAmount = currentAzrael.Damage;
-                currentSmurf.Health -= damageAmount;
+                HandleEnemyCollision(azraels[0], 0);
+            }
 
-                // 2. Show damage indicator
-                if (lblDamage != null)
-                {
-                    lblDamage.Text = $"- {damageAmount} HP!";
-                    lblDamage.Visible = true;
+            // Check collisions with horizontal cat
+            if (horizontalCats.Count > 0 && pbEnemies.Count > 1 && pbEnemies[1].Visible && 
+                smurfControl.GetBounds().IntersectsWith(pbEnemies[1].Bounds))
+            {
+                HandleEnemyCollision(horizontalCats[0], 1);
+            }
 
-                    // Hide it after 2 seconds
-                    var damageTimer = new System.Windows.Forms.Timer();
-                    damageTimer.Interval = 2000;
-                    damageTimer.Tick += (s, e) =>
-                    {
-                        lblDamage.Visible = false;
-                        damageTimer.Stop();
-                        damageTimer.Dispose();
-                    };
-                    damageTimer.Start();
-                }
-
-                // 3. Check if Papa Smurf died
-                if (currentSmurf.Health <= 0)
-                {
-                    currentSmurf.Health = 0;
-                    UpdateHealthBar();
-
-                    // Stop everything
-                    MessageBox.Show("Oh no! Azrael caught you! Game Over.", "Defeat");
-
-                    // Close the form to end the application
-                    this.Close(); 
-                }
-                else
-                {
-                    // He survived! Update the health bar
-                    UpdateHealthBar();
-
-                    // Teleport Azrael to a new random safe spot so he doesn't keep hitting the player
-                    SpawnAzrael();
-                }
+            // Check collisions with vertical cat
+            if (verticalCats.Count > 0 && pbEnemies.Count > 2 && pbEnemies[2].Visible && 
+                smurfControl.GetBounds().IntersectsWith(pbEnemies[2].Bounds))
+            {
+                HandleEnemyCollision(verticalCats[0], 2);
             }
 
             // --- COIN TIME TRIAL COLLISION ---
@@ -867,6 +1058,58 @@ namespace SmurfGame.WinForms
                 }
             }
         }
+
+        private void HandleEnemyCollision(Creature enemy, int enemyIndex)
+        {
+            // 1. Get damage amount based on enemy type
+            int damageAmount = 30;  // Default damage
+            if (enemy is Azrael azrael)
+                damageAmount = azrael.Damage;
+            else if (enemy is HorizontalCat hCat)
+                damageAmount = hCat.Damage;
+            else if (enemy is VerticalCat vCat)
+                damageAmount = vCat.Damage;
+
+            // 2. Apply damage
+            currentSmurf.Health -= damageAmount;
+
+            // 3. Show damage indicator
+            if (lblDamage != null)
+            {
+                lblDamage.Text = $"- {damageAmount} HP!";
+                lblDamage.Visible = true;
+
+                // Hide it after 2 seconds
+                var damageTimer = new System.Windows.Forms.Timer();
+                damageTimer.Interval = 2000;
+                damageTimer.Tick += (s, e) =>
+                {
+                    lblDamage.Visible = false;
+                    damageTimer.Stop();
+                    damageTimer.Dispose();
+                };
+                damageTimer.Start();
+            }
+
+            // 4. Check if Papa Smurf died
+            if (currentSmurf.Health <= 0)
+            {
+                currentSmurf.Health = 0;
+                UpdateHealthBar();
+
+                // Stop everything
+                MessageBox.Show("Oh no! A cat caught you! Game Over.", "Defeat");
+
+                // Close the form to end the application
+                this.Close();
+            }
+            else
+            {
+                // He survived! Update the health bar
+                UpdateHealthBar();
+            }
+        }
+
         private void UpdateHealthBar()
         {
             if (currentSmurf != null && pbHealthBar != null)

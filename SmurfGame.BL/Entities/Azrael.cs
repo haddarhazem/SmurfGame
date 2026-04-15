@@ -6,6 +6,6 @@ namespace SmurfGame.BL.Entities
 {
     public class Azrael : Creature
     {
-        public int Damage { get; set; } = 60; // He hits hard!
+        public int Damage { get; set; } = 30; // Stationary cat, moderate damage
     }
 }
