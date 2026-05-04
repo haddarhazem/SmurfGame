@@ -260,8 +260,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 👤 Author & Credits
 
-**Developer**: Hazem Haddar  
-**GitHub**: [@haddarhazem](https://github.com/haddarhazem)  
+**Developer**: Hazem Haddar / Yahya houimdi  
+**GitHub**: [@haddarhazem](https://github.com/haddarhazem)  /  [@yahyahouimdi](https://github.com/yahyahouimdi)
 **Repository**: [SmurfGame](https://github.com/haddarhazem/SmurfGame)
 
 ### Acknowledgments
@@ -278,8 +278,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-**Game Version**: 1.0.0  
-**Last Updated**: December 2024  
+**Game Version**: 2.0.0  
+**Last Updated**: March 2026  
 **Status**: ✅ Stable & Playable
 
 **Ready to Play? Start Your Adventure! 🍄🎮**
